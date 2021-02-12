@@ -1,0 +1,154 @@
+chrome.omnibox.setDefaultSuggestion({
+    "description": "Stuff!"
+});
+
+chrome.omnibox.onInputStarted.addListener(function() {
+    console.log("Input Started");
+});
+chrome.omnibox.onInputCancelled.addListener(function() {
+    console.log("Input Cancelled");
+});
+chrome.omnibox.onInputEntered.addListener(function(text) {
+    console.log("Input Entered is " + text);
+});
+chrome.omnibox.onInputChanged.addListener(function(txt, suggest) {
+    let text = txt || " ";
+    let valid_suggest = true;
+    var suggestions = [];
+    suggestions = [{content: " ", description: "Commands are 'morse' or 'regex'"}];
+    if (/^morse /.test(text)) {
+        text = text.replace(/^morse /, "");
+        suggestions = [
+            {
+                content: encodeMorse(text, "smart") || "No text",
+                description: "Morse encode/decode \"" + text + "\"",
+            },
+        ];
+    }
+    if (/^regex /.test(text)) {
+        text = text.replace(/^regex /, "");
+        suggest(re_suggestions(text));
+        function re_suggestions(r) {
+            if (/^\/[^\/]{1,100000}\/[a-zA-Z]{0,10} .+$/.test(r)){
+                let output = [];
+                r = r.match(/^\/([^\/]{1,100000})\/([a-zA-Z]{0,10}) (.+)$/);
+                let regex;
+                try {
+                  regex = new RegExp(r[1], r[2]);
+                  output.push({content: "true", description: `Valid: True`});
+                } catch(e) {
+                  output.push({content: "false", description: `Valid: False`});
+                  output.push({content: "Invalid flags, testing with no flags.", description: "Error: Invalid flags, testing with no flags."})
+                  regex = new RegExp(r[1], "");
+                }
+                if (regex.test(r[3])){
+                    output.push({content: `true`, description: `Matches text: true`});
+                }
+                output.push({content: `${regex.test(r[3])}`, description: `Matches text: ${regex.test(r[3])}`});
+                /*
+                let matches = r[3].match(regex);
+                matches = matches.length > 1 ? matches.shift() :  "None";
+                if (!(matches === "None")) matches = JSON.stringify(matches);
+                output.push({content: `Matches: ${matches}`, description: `Matches: ${matches}`});
+                */
+                output.push({
+                    content: `${JSON.stringify(r[3].match(regex))}`, 
+                    description: `Matches found: ${JSON.stringify(r[3].match(regex))}`
+                });
+                return output;
+            } else {
+                return [{content: "Invalid regex, valid form is /regex/flags text to test", description: "Invalid regex, valid form is /regex/flags text to test"}];
+            }
+        }
+    }
+});
+/*
+        {
+            content: "" + morse(text),
+            description: "Encode \"" + text + "\""
+        },
+        {
+            content: "" + decode(text),
+            description: "Decode \"" + text + "\""
+        }
+        
+*/
+function decodeMorse(text, mode) {
+    if (!(/^[\. -/]+$/.test(text))){
+        if (mode === "smart") return encodeMorse(text);
+        return "Already decoded"
+    }
+    return text.split(" ").map((e) => {
+        let keys = Object.keys(alphabet);
+        for(let i = 0; i < keys.length; i++){
+            if (alphabet[keys[i]] === e.toLowerCase()){
+                return keys[i] || "_";
+            }
+        }
+    }).join("").toUpperCase();
+}
+function encodeMorse(text, mode) {
+    if (/^[\. -/]+$/.test(text)){
+        if (mode === "smart") return decodeMorse(text);
+        return "Already encoded"
+    }
+    return text.split('').map(function(e) {
+        return alphabet[e.toLowerCase()] || '';
+    }).join(' ').replace(/ +/g, ' ') || "No string inputted";
+}
+var alphabet = {
+        'a': '.-',
+        'b': '-...',
+        'c': '-.-.',
+        'd': '-..',
+        'e': '.',
+        'f': '..-.',
+        'g': '--.',
+        'h': '....',
+        'i': '..',
+        'j': '.---',
+        'k': '-.-',
+        'l': '.-..',
+        'm': '--',
+        'n': '-.',
+        'o': '---',
+        'p': '.--.',
+        'q': '--.-',
+        'r': '.-.',
+        's': '...',
+        't': '-',
+        'u': '..-',
+        'v': '...-',
+        'w': '.--',
+        'x': '-..-',
+        'y': '-.--',
+        'z': '--..',
+        ' ': '/',
+        '1': '.----',
+        '2': '..---',
+        '3': '...--',
+        '4': '....-',
+        '5': '.....',
+        '6': '-....',
+        '7': '--...',
+        '8': '---..',
+        '9': '----.',
+        '0': '-----',
+        '.':'.-.-.-',
+        ',':'--..--',
+        '?': '..--..',
+        '!':'-.-.--',
+        '\'':'.----.',
+        '(':'-.--.',
+        ')':'-.--.-',
+        '&':'.-...',
+        ':':'---...',
+        ';':'-.-.-.',
+        '/':'-..-.',
+        '_':'..--.-',
+        '=':'-...-',
+        '+':'.-.-.',
+        '-':'-....-',
+        '$':'...-..-',
+        '@':'.--.-.',
+    }

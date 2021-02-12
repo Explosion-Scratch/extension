@@ -1,0 +1,12 @@
+{
+ "name": "Extension",
+  "description" : "Do random stuff.",
+  "version": "1",
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "manifest_version": 2,
+  "omnibox": {
+    "keyword" : "#" 
+   }
+}
